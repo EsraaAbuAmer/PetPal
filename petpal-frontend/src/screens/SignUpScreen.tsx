@@ -12,26 +12,29 @@ import { useForm, Controller } from "react-hook-form";
 import PrimaryButton from "../components/PrimaryButton";
 
 type FormData = {
+  name: string;
   email: string;
   password: string;
+  confirmPassword: string;
 };
 
-const LoginScreen = () => {
+const SignUpScreen = () => {
   const navigation = useNavigation();
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<FormData>();
 
   const onSubmit = (data: FormData) => {
-    console.log("Login Data:", data);
-    // Next: connect to backend
+    console.log("Sign Up Data:", data);
+    // Connect to backend API later
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Top: Back & Title */}
       <View>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -39,7 +42,28 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.title}>Log in to PetPal</Text>
+        <Text style={styles.title}>Create your account</Text>
+
+        {/* Name */}
+        <View style={styles.inputWrapper}>
+          <Controller
+            control={control}
+            name="name"
+            rules={{ required: "Full name is required" }}
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                placeholder="Full Name"
+                placeholderTextColor="#45a193"
+                style={styles.input}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+          />
+          {errors.name && (
+            <Text style={styles.errorText}>{errors.name.message}</Text>
+          )}
+        </View>
 
         {/* Email */}
         <View style={styles.inputWrapper}>
@@ -55,9 +79,9 @@ const LoginScreen = () => {
             }}
             render={({ field: { onChange, value } }) => (
               <TextInput
-                style={styles.input}
-                placeholder="Enter your email"
+                placeholder="Email"
                 placeholderTextColor="#45a193"
+                style={styles.input}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 onChangeText={onChange}
@@ -84,9 +108,9 @@ const LoginScreen = () => {
             }}
             render={({ field: { onChange, value } }) => (
               <TextInput
-                style={styles.input}
-                placeholder="Enter your password"
+                placeholder="Password"
                 placeholderTextColor="#45a193"
+                style={styles.input}
                 secureTextEntry
                 onChangeText={onChange}
                 value={value}
@@ -97,24 +121,51 @@ const LoginScreen = () => {
             <Text style={styles.errorText}>{errors.password.message}</Text>
           )}
         </View>
+
+        {/* Confirm Password */}
+        <View style={styles.inputWrapper}>
+          <Controller
+            control={control}
+            name="confirmPassword"
+            rules={{
+              required: "Please confirm your password",
+              validate: (value) =>
+                value === watch("password") || "Passwords do not match",
+            }}
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                placeholder="Confirm Password"
+                placeholderTextColor="#45a193"
+                style={styles.input}
+                secureTextEntry
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+          />
+          {errors.confirmPassword && (
+            <Text style={styles.errorText}>
+              {errors.confirmPassword.message}
+            </Text>
+          )}
+        </View>
       </View>
 
       {/* Bottom */}
-
       <View>
         <View style={styles.buttonWrapper}>
-          <PrimaryButton title="Login" onPress={handleSubmit(onSubmit)} />
+          <PrimaryButton title="Sign Up" onPress={handleSubmit(onSubmit)} />
         </View>
+
         <Text style={styles.disclaimer}>
-          By continuing, you agree to our Terms of Service to learn how we
-          collect, use and share your data
+          By signing up, you agree to our Terms of Service and Privacy Policy.
         </Text>
 
         <TouchableOpacity
           style={styles.signUpButton}
-          onPress={() => navigation.navigate("SignUp")}
+          onPress={() => navigation.navigate("Login")}
         >
-          <Text style={styles.signUpText}>Don't have an account? Sign up</Text>
+          <Text style={styles.signUpText}>Already have an account? Log in</Text>
         </TouchableOpacity>
 
         <View style={{ height: 20 }} />
@@ -123,7 +174,7 @@ const LoginScreen = () => {
   );
 };
 
-export default LoginScreen;
+export default SignUpScreen;
 
 const styles = StyleSheet.create({
   container: {
