@@ -10,6 +10,11 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import PrimaryButton from "../components/PrimaryButton";
+import { useLoginUserMutation } from '../services/authApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../features/auth/authSlice';
+
 
 type FormData = {
   email: string;
@@ -18,15 +23,32 @@ type FormData = {
 
 const LoginScreen = () => {
   const navigation = useNavigation();
+
+  const [loginUser, { isLoading, error }] = useLoginUserMutation();
+  const dispatch = useDispatch();
+
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>();
 
-  const onSubmit = (data: FormData) => {
-    console.log("Login Data:", data);
-    // Next: connect to backend
+  const onSubmit = async (data: FormData) => {
+    try {
+      const response = await loginUser(data).unwrap();
+  
+      // Save token to AsyncStorage
+      await AsyncStorage.setItem('token', response.token);
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
+  
+      // Update Redux
+      dispatch(setCredentials({ user: response.user, token: response.token }));
+  
+      // Navigate to main screen
+      navigation.navigate('Home'); // Replace with your actual route
+    } catch (err: any) {
+      console.error('Login failed:', err);
+    }
   };
 
   return (

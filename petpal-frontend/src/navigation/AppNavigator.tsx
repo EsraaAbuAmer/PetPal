@@ -6,16 +6,37 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
+import SplashScreen from '../screens/SplashScreen';
+import HomeScreen from '../screens/HomeScreen'; // Placeholder for authenticated screen
+
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
+import { useAuthLoader } from '../hooks/useAuthLoader';
 
 const Stack = createNativeStackNavigator();
 
 const AppNavigator = () => {
+  const loading = useAuthLoader(); // checks and sets auth from AsyncStorage
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  if (loading) {
+    return <SplashScreen />;
+  }
+
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Onboarding" screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} />
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {!isAuthenticated ? (
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Home" component={HomeScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );

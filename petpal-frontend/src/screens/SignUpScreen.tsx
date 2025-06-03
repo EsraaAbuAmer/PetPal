@@ -10,6 +10,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import PrimaryButton from "../components/PrimaryButton";
+import { useRegisterUserMutation } from '../services/authApi';
 
 type FormData = {
   name: string;
@@ -26,10 +27,19 @@ const SignUpScreen = () => {
     watch,
     formState: { errors },
   } = useForm<FormData>();
+  const [registerUser, { isLoading, error }] = useRegisterUserMutation();
 
-  const onSubmit = (data: FormData) => {
-    console.log("Sign Up Data:", data);
-    // Connect to backend API later
+  const onSubmit = async (data: FormData) => {
+    try {
+      const { name, email, password } = data;
+      const response = await registerUser({ name, email, password }).unwrap();
+      console.log('User registered:', response);
+  
+      // Optionally: Navigate to login or auto-login
+      navigation.navigate('Login');
+    } catch (err: any) {
+      console.error('Registration error:', err);
+    }
   };
 
   return (
