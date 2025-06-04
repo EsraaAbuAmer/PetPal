@@ -11,6 +11,7 @@ import HomeScreen from '../screens/HomeScreen'; // Placeholder for authenticated
 
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
+import BottomTabs from './BottomTabs';
 import { useAuthLoader } from '../hooks/useAuthLoader';
 
 const Stack = createNativeStackNavigator();
@@ -34,7 +35,7 @@ const AppNavigator = () => {
           </>
         ) : (
           <>
-            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="MainTabs" component={BottomTabs} />
           </>
         )}
       </Stack.Navigator>
