@@ -1,14 +1,20 @@
-// src/services/api.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
-export const petPalApi = createApi({
-  reducerPath: 'petPalApi',
-  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:5000/api' }),
-  endpoints: (builder) => ({
-    getPets: builder.query<any, void>({
-      query: () => '/pets',
-    }),
+export const API_URL = Constants.expoConfig?.extra?.API_URL;
+
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({
+    baseUrl: API_URL!,  // ✅ use env-based URL
+    prepareHeaders: async (headers) => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
   }),
+  endpoints: () => ({}),
 });
-
-export const { useGetPetsQuery } = petPalApi;

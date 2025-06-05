@@ -10,10 +10,11 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import PrimaryButton from "../components/PrimaryButton";
-import { useLoginUserMutation } from '../services/authApi';
+import { useLoginMutation } from '../services/authApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../features/auth/authSlice';
+
 
 
 type FormData = {
@@ -24,7 +25,7 @@ type FormData = {
 const LoginScreen = () => {
   const navigation = useNavigation();
 
-  const [loginUser, { isLoading, error }] = useLoginUserMutation();
+  const [login, { isLoading, error }] = useLoginMutation();
   const dispatch = useDispatch();
 
   const {
@@ -35,7 +36,7 @@ const LoginScreen = () => {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await loginUser(data).unwrap();
+      const response = await login(data).unwrap();
   
       // Save token to AsyncStorage
       await AsyncStorage.setItem('token', response.token);
@@ -45,7 +46,10 @@ const LoginScreen = () => {
       dispatch(setCredentials({ user: response.user, token: response.token }));
   
       // Navigate to main screen
-      navigation.navigate('Home'); // Replace with your actual route
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainTabs' }],
+      }); // Replace with your actual route
     } catch (err: any) {
       console.error('Login failed:', err);
     }

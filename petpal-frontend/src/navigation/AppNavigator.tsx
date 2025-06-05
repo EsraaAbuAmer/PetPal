@@ -7,7 +7,7 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import SplashScreen from '../screens/SplashScreen';
-import HomeScreen from '../screens/HomeScreen'; // Placeholder for authenticated screen
+
 
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
