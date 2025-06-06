@@ -48,7 +48,6 @@ export const login = async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error('Login error:', err);
     return res.status(500).json({ message: 'Server error' });
   }
 };
