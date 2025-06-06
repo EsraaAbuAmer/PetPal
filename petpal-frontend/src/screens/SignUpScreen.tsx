@@ -32,9 +32,7 @@ const SignUpScreen = () => {
   const onSubmit = async (data: FormData) => {
     try {
       const { name, email, password } = data;
-      const response = await registerUser({ name, email, password }).unwrap();
-      console.log('User registered:', response);
-  
+      const response = await registerUser({ name, email, password }).unwrap();  
       // Optionally: Navigate to login or auto-login
       navigation.navigate('Login');
     } catch (err: any) {

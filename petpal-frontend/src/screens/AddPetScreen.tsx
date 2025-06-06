@@ -1,17 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image,
-} from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import * as ImagePicker from 'expo-image-picker';
-import { useAddPetMutation } from '../features/pet/petApi';
-import { useNavigation } from '@react-navigation/native';
-import { uploadPet } from '../utils/UploadPet';
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  Animated,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+import { useForm, Controller } from "react-hook-form";
+import * as ImagePicker from "expo-image-picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useNavigation } from "@react-navigation/native";
+import { uploadPet } from "../utils/UploadPet";
+
 const AddPetScreen = () => {
-  const { control, handleSubmit, reset } = useForm();
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm();
   const [isLoading, setIsLoading] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [birthDate, setBirthDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const navigation = useNavigation();
+  const imageOpacity = useRef(new Animated.Value(0)).current;
+  const [buttonScale] = useState(new Animated.Value(1));
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -21,113 +43,225 @@ const AddPetScreen = () => {
 
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
+      Animated.timing(imageOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
     }
   };
+
   const onSubmit = async (data: any) => {
     if (!imageUri) {
-      Alert.alert('Image Required', 'Please select an image for your pet');
+      Alert.alert("Image Required", "Please select an image for your pet");
       return;
     }
-  
+
     const formData = new FormData();
-    formData.append('name', data.name);
-    formData.append('age', data.age);
-    formData.append('image', {
+    formData.append("name", data.name);
+    formData.append("birth_date", birthDate.toISOString().split("T")[0]); // YYYY-MM-DD
+    formData.append("image", {
       uri: imageUri,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
+      name: "photo.jpg",
+      type: "image/jpeg",
     } as any);
-  
+
     try {
       setIsLoading(true);
       await uploadPet(formData);
-      Alert.alert('Success', 'Pet added!');
+      Alert.alert("Success", "Pet added!");
       reset();
       setImageUri(null);
       navigation.goBack();
     } catch (err) {
-      console.log("Upload error", err);
-      Alert.alert('Error', 'Could not add pet');
+      console.error("Add pet error:", err);
+      Alert.alert("Error", "Could not add pet");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handlePressIn = () => {
+    Animated.spring(buttonScale, {
+      toValue: 0.96,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setBirthDate(selectedDate);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Add New Pet</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>Add New Pet</Text>
 
-      <Controller
-        control={control}
-        name="name"
-        rules={{ required: 'Name required' }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput placeholder="Pet Name" style={styles.input} onChangeText={onChange} value={value} />
+        {/* Name */}
+        <Controller
+          control={control}
+          name="name"
+          rules={{ required: "Name is required" }}
+          render={({ field: { onChange, value } }) => (
+            <>
+              <TextInput
+                placeholder="Pet Name"
+                style={styles.input}
+                onChangeText={onChange}
+                value={value}
+              />
+              {errors.name && (
+                <Text style={styles.errorText}>{errors.name.message}</Text>
+              )}
+            </>
+          )}
+        />
+
+        {/* Birth Date */}
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          style={styles.input}
+        >
+          <Text
+            style={{ color: birthDate ? "#a0a0a0" : "#a0a0a0", fontSize: 16 }}
+          >
+            {birthDate ? birthDate.toDateString() : "Birth Date"}
+          </Text>
+        </TouchableOpacity>
+        {errors.birth_date && (
+          <Text style={styles.errorText}>{errors.birth_date.message}</Text>
         )}
-      />
 
-      <Controller
-        control={control}
-        name="age"
-        rules={{ required: 'Age required' }}
-        render={({ field: { onChange, value } }) => (
-          <TextInput placeholder="Pet Age" style={styles.input} keyboardType="numeric" onChangeText={onChange} value={value} />
+        {showDatePicker && (
+          <DateTimePicker
+            value={birthDate}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            onChange={onDateChange}
+            maximumDate={new Date()}
+          />
         )}
-      />
 
-      {/* Select Image */}
-      <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
-        <Text style={styles.imagePickerText}>{imageUri ? 'Change Image' : 'Pick Image from Gallery'}</Text>
-      </TouchableOpacity>
+        {/* Select Image */}
+        <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+          <Text style={styles.imagePickerText}>
+            {imageUri ? "Change Image" : "Pick Image from Gallery"}
+          </Text>
+        </TouchableOpacity>
 
-      {imageUri && (
-        <Image source={{ uri: imageUri }} style={styles.previewImage} />
-      )}
+        {imageUri && (
+          <View style={styles.imageWrapper}>
+            <Animated.Image
+              source={{ uri: imageUri }}
+              style={[styles.previewImage, { opacity: imageOpacity }]}
+            />
+          </View>
+        )}
 
-      {/* Submit */}
-      <TouchableOpacity onPress={handleSubmit(onSubmit)} style={styles.button}>
-        <Text style={styles.buttonText}>{isLoading ? 'Adding...' : 'Add Pet'}</Text>
-      </TouchableOpacity>
-    </View>
+        {/* Submit */}
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <TouchableOpacity
+            onPress={handleSubmit(onSubmit)}
+            style={styles.button}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            activeOpacity={0.8}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Add Pet</Text>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 export default AddPetScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f8fcfb' },
-  title: { fontSize: 24, fontWeight: '700', marginBottom: 20, color: '#0c1d1a' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f8fcfb",
+  },
+  container: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 24,
+    color: "#0c1d1a",
+    textAlign: "center",
+  },
   input: {
-    backgroundColor: '#e6f4f2',
+    backgroundColor: "#e6f4f2",
     borderRadius: 12,
     padding: 14,
-    marginBottom: 12,
+    marginBottom: 8,
     fontSize: 16,
-    color: '#0c1d1a',
+    color: "#0c1d1a",
+  },
+  errorText: {
+    color: "#ff4d4f",
+    marginBottom: 12,
+    marginLeft: 4,
+    fontSize: 14,
   },
   button: {
-    backgroundColor: '#00d1b2',
-    padding: 14,
+    backgroundColor: "#00d1b2",
+    padding: 16,
     borderRadius: 999,
-    alignItems: 'center',
-    marginTop: 12,
+    alignItems: "center",
+    marginTop: 16,
   },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
   imagePicker: {
-    backgroundColor: '#e6f4f2',
-    padding: 12,
+    backgroundColor: "#e6f4f2",
+    padding: 14,
     borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: "center",
+    marginBottom: 16,
   },
   imagePickerText: {
-    color: '#0c1d1a',
-    fontWeight: '500',
+    color: "#0c1d1a",
+    fontWeight: "500",
+  },
+  imageWrapper: {
+    alignItems: "center",
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
   },
   previewImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 12,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 3,
+    borderColor: "#00d1b2",
   },
 });

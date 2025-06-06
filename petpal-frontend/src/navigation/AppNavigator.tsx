@@ -7,6 +7,7 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 import LoginScreen from '../screens/LoginScreen';
 import SignUpScreen from '../screens/SignUpScreen';
 import SplashScreen from '../screens/SplashScreen';
+import PetProfileScreen from '../screens/PetProfileScreen';
 
 
 import { useSelector } from 'react-redux';
@@ -32,10 +33,12 @@ const AppNavigator = () => {
             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
+            
           </>
         ) : (
           <>
             <Stack.Screen name="MainTabs" component={BottomTabs} />
+            <Stack.Screen name="PetProfile" component={PetProfileScreen} />
           </>
         )}
       </Stack.Navigator>

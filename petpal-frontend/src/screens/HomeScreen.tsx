@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useGetPetsQuery } from "../features/pet/petApi";
+import { useNavigation } from '@react-navigation/native';
 
 const upcoming = [
   {
@@ -28,8 +29,6 @@ const upcoming = [
   },
 ];
 
-
-
 const healthTips = [
   "🧼 Bathe your dog monthly to keep their coat clean and healthy.",
   "🪥 Brush your pet’s teeth 2-3 times per week to prevent dental issues.",
@@ -38,11 +37,38 @@ const healthTips = [
   "🦴 Provide proper chew toys to support dental hygiene.",
 ];
 
-const HomeScreen = () => {
-
+const calculateAge = (birthDateString: string) => {
+  const birthDate = new Date(birthDateString);
+  const today = new Date();
   
-  const { data: pets = [], error, isLoading } = useGetPetsQuery(undefined);
 
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+
+  if (months < 0) {
+    years--;
+    months += 12;
+  }
+  let ageParts = [];
+
+  if (years > 0) {
+    ageParts.push(`${years} year${years !== 1 ? "s" : ""}`);
+  }
+
+  if (months > 0) {
+    ageParts.push(`${months} month${months !== 1 ? "s" : ""}`);
+  }
+
+  if (ageParts.length === 0) {
+    return "Newborn";
+  }
+
+  return ageParts.join(" ");
+};
+
+const HomeScreen = () => {
+  const navigation = useNavigation();
+  const { data: pets = [], error, isLoading } = useGetPetsQuery(undefined);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -84,7 +110,13 @@ const HomeScreen = () => {
           <Text style={{ color: "#6e7d78" }}>No pets yet. Add one!</Text>
         ) : (
           pets.map((item: any) => (
-            <View style={styles.card} key={item.id}>
+            <TouchableOpacity
+              key={item.id}
+              style={styles.card}
+              onPress={() =>
+                navigation.navigate("PetProfile", { petId: item.id })
+              }
+            >
               <Image
                 source={{ uri: item.image }}
                 style={styles.avatarBordered}
@@ -92,12 +124,13 @@ const HomeScreen = () => {
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{item.name}</Text>
               </View>
-              <Text style={styles.time}>Age: {item.age}</Text>
-            </View>
+              <Text style={styles.time}>
+                Age: {calculateAge(item.birth_date)}
+              </Text>
+            </TouchableOpacity>
           ))
         )}
 
-        
         {/* Health Tips */}
         <Text style={styles.sectionTitle}>Health Tips</Text>
         <Text style={styles.sectionSubtitle}>
