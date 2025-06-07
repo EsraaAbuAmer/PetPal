@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,13 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
-import { useGetPetQuery } from "../features/pet/petApi";
+import {
+  useGetPetQuery,
+  useGetVaccinationsQuery,
+  useAddVaccinationMutation,
+  useGetEventsQuery,
+  useAddEventMutation,
+} from "../features/pet/petApi";
 
 import Header from "../components/PetProfile/Header";
 import ActionButtons from "../components/PetProfile/ActionButtons";
@@ -16,6 +22,8 @@ import AvatarSection from "../components/PetProfile/AvatarSection";
 import InfoRow from "../components/PetProfile/InfoRow";
 import VaccinationHistorySection from "../components/PetProfile/VaccinationHistorySection";
 import UpcomingEventsSection from "../components/PetProfile/UpcomingEventsSection";
+import AddVaccinationModal from "../components/AddVaccinationModal";
+import AddEventModal from "../components/AddEventModal";
 
 const calculateAge = (birthDateString: string) => {
   const birthDate = new Date(birthDateString);
@@ -37,25 +45,63 @@ const calculateAge = (birthDateString: string) => {
   return ageParts.join(" ");
 };
 
-// TEMP placeholders
-const vaccinations = [
-  { name: "Rabies", dueDate: "2023-01-10" },
-  { name: "DAPPv", dueDate: "2023-01-10" },
-];
-
-const events = [
-  { title: "Grooming", date: "Jan 10, 2023", location: "Pawsh Wash" },
-  { title: "Grooming", date: "Feb 15, 2023", location: "Pet Spa" },
-];
-
 const PetProfileScreen = () => {
   const route = useRoute();
   const { petId }: any = route.params;
 
   const { data: pet, error, isLoading, refetch } = useGetPetQuery(petId);
+  const { data: vaccinationsList = [], refetch: refetchVaccinations } =
+    useGetVaccinationsQuery(petId);
+
+  const { data: eventsList = [], refetch: refetchEvents } =
+    useGetEventsQuery(petId);
+
+  const [addVaccination] = useAddVaccinationMutation();
+  const [addEvent] = useAddEventMutation();
+
+  const [vaccinationModalVisible, setVaccinationModalVisible] = useState(false);
+  const [eventModalVisible, setEventModalVisible] = useState(false);
+
+  const handleAddVaccination = async (vaccination: {
+    name: string;
+    dueDate: string;
+    notes?: string;
+  }) => {
+    try {
+      await addVaccination({
+        petId,
+        vaccination: {
+          vaccine_name: vaccination.name,
+          date_administered: vaccination.dueDate,
+          notes: vaccination.notes || "",
+        },
+      }).unwrap();
+
+      refetchVaccinations();
+      setVaccinationModalVisible(false);
+    } catch (err) {
+      console.error("Failed to add vaccination:", err);
+    }
+  };
+
+  const handleAddEvent = async (event: { event_title: string; event_date: string; notes: string }) => {
+    try {
+      await addEvent({
+        petId,
+        event, // just pass it directly, keys already correct
+      }).unwrap();
+  
+      refetchEvents();
+      setEventModalVisible(false);
+    } catch (err) {
+      console.error("Failed to add event:", err);
+    }
+  };
 
   useEffect(() => {
     refetch();
+    refetchVaccinations();
+    refetchEvents();
   }, []);
 
   if (isLoading) {
@@ -81,17 +127,51 @@ const PetProfileScreen = () => {
         <AvatarSection
           image={pet.image}
           name={pet.name}
-          details={`Golden Retriever · Female · ${calculateAge(pet.birth_date)}`}
+          details={`Golden Retriever · Female · ${calculateAge(
+            pet.birth_date
+          )}`}
         />
         <ActionButtons />
         <Text style={styles.sectionTitle}>Information</Text>
         <InfoRow label="Spayed/Neutered" value="Yes" />
-        <InfoRow label="Birthday" value={new Date(pet.birth_date).toDateString()} />
+        <InfoRow
+          label="Birthday"
+          value={new Date(pet.birth_date).toDateString()}
+        />
         <InfoRow label="Weight" value="47 lbs" />
-        <VaccinationHistorySection vaccinations={vaccinations} />
-        <UpcomingEventsSection events={events} />
+
+        <VaccinationHistorySection
+          vaccinations={vaccinationsList.map((v: any) => ({
+            name: v.vaccine_name,
+            dueDate: new Date(v.date_administered).toISOString().split("T")[0],
+          }))}
+          onAddPress={() => setVaccinationModalVisible(true)}
+        />
+
+        <UpcomingEventsSection
+          events={eventsList.map((e: any) => ({
+            title: e.event_title,
+            date: new Date(e.event_date).toISOString().split("T")[0],
+            location: e.notes,
+          }))}
+          onAddPress={() => setEventModalVisible(true)}
+        />
+
         <View style={{ height: 30 }} />
       </ScrollView>
+
+      {/* MODALS */}
+      <AddVaccinationModal
+        visible={vaccinationModalVisible}
+        onClose={() => setVaccinationModalVisible(false)}
+        onSave={handleAddVaccination}
+      />
+
+      <AddEventModal
+        visible={eventModalVisible}
+        onClose={() => setEventModalVisible(false)}
+        onSave={handleAddEvent}
+      />
     </SafeAreaView>
   );
 };

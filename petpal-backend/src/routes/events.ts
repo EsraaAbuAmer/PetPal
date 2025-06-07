@@ -1,6 +1,7 @@
 import express from 'express';
 import { protect } from '../middleware/authMiddleware';
 import { db } from '../db';
+import { ResultSetHeader } from 'mysql2'; // ADD THIS
 
 const router = express.Router({ mergeParams: true });
 
@@ -41,14 +42,21 @@ router.post('/pets/:id/events', protect, async (req, res) => {
     if ((petRows as any[]).length === 0) {
       return res.status(404).json({ message: 'Pet not found' });
     }
-
-    await db.execute(
+    const [result] = await db.execute(
       `INSERT INTO events (pet_id, event_title, event_date, notes)
        VALUES (?, ?, ?, ?)`,
       [petId, event_title, event_date, notes]
-    );
+    ) as [ResultSetHeader, unknown]; // CAPTURE result
 
-    res.status(201).json({ message: 'Event added successfully' });
+    res.status(201).json({
+      message: 'Event added successfully',
+      event: {
+        id: result.insertId,
+        event_title,
+        event_date,
+        notes
+      }
+    });
   } catch (error) {
     console.error('Add event error:', error);
     res.status(500).json({ message: 'Failed to add event' });

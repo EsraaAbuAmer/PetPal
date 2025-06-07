@@ -1,6 +1,7 @@
 import express from 'express';
 import { protect } from '../middleware/authMiddleware';
 import { db } from '../db';
+import { ResultSetHeader } from 'mysql2'; // ADD THIS!
 
 const router = express.Router({ mergeParams: true });
 
@@ -42,13 +43,21 @@ router.post('/pets/:id/vaccinations', protect, async (req, res) => {
       return res.status(404).json({ message: 'Pet not found' });
     }
 
-    await db.execute(
+    const [result] = await db.execute(
       `INSERT INTO vaccinations (pet_id, vaccine_name, date_administered, notes)
        VALUES (?, ?, ?, ?)`,
       [petId, vaccine_name, date_administered, notes]
-    );
+    ) as [ResultSetHeader, unknown];  // CAPTURE INSERT RESULT!
 
-    res.status(201).json({ message: 'Vaccination added successfully' });
+    res.status(201).json({
+      message: 'Vaccination added successfully',
+      vaccination: {
+        id: result.insertId,
+        vaccine_name,
+        date_administered,
+        notes
+      }
+    });
   } catch (error) {
     console.error('Add vaccination error:', error);
     res.status(500).json({ message: 'Failed to add vaccination' });

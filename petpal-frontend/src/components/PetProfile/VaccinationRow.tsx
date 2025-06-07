@@ -7,11 +7,19 @@ interface Props {
 }
 
 const VaccinationRow = ({ name, dueDate }: Props) => {
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
   return (
     <View style={styles.listRow}>
       <View>
         <Text style={styles.listTitle}>{name}</Text>
-        <Text style={styles.listSub}>{dueDate}</Text>
+        <Text style={styles.listSub}>{formatDate(dueDate)}</Text>
       </View>
     </View>
   );

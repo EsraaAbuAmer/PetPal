@@ -23,8 +23,37 @@ export const petApi = api.injectEndpoints({
         method: "GET",
       }),
     }),
+    getVaccinations: builder.query({
+      query: (petId: number) => `/pets/${petId}/vaccinations`,
+    }),
+    addVaccination: builder.mutation({
+      query: ({ petId, vaccination }) => ({
+        url: `/pets/${petId}/vaccinations`,
+        method: "POST",
+        body: vaccination,
+      }),
+    }),
+    getEvents: builder.query({
+      query: (petId: number) => `/pets/${petId}/events`,
+    }),
+    addEvent: builder.mutation({
+      query: ({ petId, event }) => ({
+        url: `/pets/${petId}/events`,
+        method: "POST",
+        body: event,
+      }),
+    }),
   }),
+
   overrideExisting: true,
 });
 
-export const { useAddPetMutation, useGetPetsQuery, useGetPetQuery } = petApi;
+export const {
+  useAddPetMutation,
+  useGetPetsQuery,
+  useGetPetQuery,
+  useGetVaccinationsQuery,
+  useAddVaccinationMutation,
+  useGetEventsQuery,
+  useAddEventMutation,
+} = petApi;

@@ -1,23 +1,18 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 interface Props {
   title: string;
   date: string;
-  location: string;
 }
 
-const EventRow = ({ title, date, location }: Props) => {
+const EventRow = ({ title, date }: Props) => {
   return (
-    <View style={styles.eventRow}>
-      <View style={styles.eventIcon}>
-        <Ionicons name="calendar-outline" size={20} color="#0c1d1a" />
-      </View>
+    <View style={styles.listRow}>
       <View>
         <Text style={styles.listTitle}>{title}</Text>
         <Text style={styles.listSub}>{date}</Text>
-        <Text style={styles.listSub}>{location}</Text>
+
       </View>
     </View>
   );
@@ -26,22 +21,14 @@ const EventRow = ({ title, date, location }: Props) => {
 export default EventRow;
 
 const styles = StyleSheet.create({
-  eventRow: {
+  listRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    justifyContent: "space-between",
+    alignItems: "center",
     width: "100%",
     paddingVertical: 12,
     borderBottomColor: "#f0f0f0",
     borderBottomWidth: 1,
-  },
-  eventIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "#e6f4f2",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
   },
   listTitle: {
     fontSize: 14,
