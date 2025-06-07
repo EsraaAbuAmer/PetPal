@@ -25,6 +25,15 @@ import UpcomingEventsSection from "../components/PetProfile/UpcomingEventsSectio
 import AddVaccinationModal from "../components/AddVaccinationModal";
 import AddEventModal from "../components/AddEventModal";
 
+// Helper function
+const capitalize = (str: string) => {
+  return str
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 const calculateAge = (birthDateString: string) => {
   const birthDate = new Date(birthDateString);
   const today = new Date();
@@ -84,13 +93,17 @@ const PetProfileScreen = () => {
     }
   };
 
-  const handleAddEvent = async (event: { event_title: string; event_date: string; notes: string }) => {
+  const handleAddEvent = async (event: {
+    event_title: string;
+    event_date: string;
+    notes: string;
+  }) => {
     try {
       await addEvent({
         petId,
-        event, // just pass it directly, keys already correct
+        event, // keys are correct
       }).unwrap();
-  
+
       refetchEvents();
       setEventModalVisible(false);
     } catch (err) {
@@ -126,23 +139,27 @@ const PetProfileScreen = () => {
         <Header />
         <AvatarSection
           image={pet.image}
-          name={pet.name}
-          details={`Golden Retriever · Female · ${calculateAge(
-            pet.birth_date
-          )}`}
+          name={capitalize(pet.name)}
+          details={`${capitalize(pet.type || "Unknown Type")} · ${capitalize(
+            pet.gender || "Unknown Gender"
+          )} · ${calculateAge(pet.birth_date)}`}
         />
         <ActionButtons />
         <Text style={styles.sectionTitle}>Information</Text>
-        <InfoRow label="Spayed/Neutered" value="Yes" />
+
+        <InfoRow label="Breed" value={capitalize(pet.breed || "Unknown")} />
+        <InfoRow label="Spayed/Neutered" value={pet.neutered ? "Yes" : "No"} />
         <InfoRow
           label="Birthday"
           value={new Date(pet.birth_date).toDateString()}
         />
-        <InfoRow label="Weight" value="47 lbs" />
-
+        <InfoRow
+          label="Weight"
+          value={pet.weight ? `${pet.weight} kg` : "Unknown"}
+        />
         <VaccinationHistorySection
           vaccinations={vaccinationsList.map((v: any) => ({
-            name: v.vaccine_name,
+            name: capitalize(v.vaccine_name),
             dueDate: new Date(v.date_administered).toISOString().split("T")[0],
           }))}
           onAddPress={() => setVaccinationModalVisible(true)}
@@ -150,7 +167,7 @@ const PetProfileScreen = () => {
 
         <UpcomingEventsSection
           events={eventsList.map((e: any) => ({
-            title: e.event_title,
+            title: capitalize(e.event_title),
             date: new Date(e.event_date).toISOString().split("T")[0],
             location: e.notes,
           }))}

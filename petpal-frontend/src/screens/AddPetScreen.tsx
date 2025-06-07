@@ -12,12 +12,15 @@ import {
   Animated,
   ActivityIndicator,
   Platform,
+  Switch,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { uploadPet } from "../utils/UploadPet";
+
+const genderOptions = ["Male", "Female"];
 
 const AddPetScreen = () => {
   const {
@@ -30,6 +33,8 @@ const AddPetScreen = () => {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [birthDate, setBirthDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [isNeutered, setIsNeutered] = useState(false);
+  const [selectedGender, setSelectedGender] = useState<string | null>(null);
 
   const navigation = useNavigation();
   const imageOpacity = useRef(new Animated.Value(0)).current;
@@ -56,10 +61,19 @@ const AddPetScreen = () => {
       Alert.alert("Image Required", "Please select an image for your pet");
       return;
     }
+    if (!selectedGender) {
+      Alert.alert("Gender Required", "Please select your pet's gender");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", data.name);
-    formData.append("birth_date", birthDate.toISOString().split("T")[0]); // YYYY-MM-DD
+    formData.append("breed", data.breed);
+    formData.append("weight", data.weight);
+    formData.append("type", data.type);
+    formData.append("birth_date", birthDate.toISOString().split("T")[0]);
+    formData.append("neutered", isNeutered ? "1" : "0");
+    formData.append("gender", selectedGender.toLowerCase());
     formData.append("image", {
       uri: imageUri,
       name: "photo.jpg",
@@ -72,6 +86,8 @@ const AddPetScreen = () => {
       Alert.alert("Success", "Pet added!");
       reset();
       setImageUri(null);
+      setSelectedGender(null);
+      setIsNeutered(false);
       navigation.goBack();
     } catch (err) {
       console.error("Add pet error:", err);
@@ -110,68 +126,137 @@ const AddPetScreen = () => {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Add New Pet</Text>
+        <Text style={styles.title}>🐾 Add Your Pet</Text>
 
-        {/* Name */}
-        <Controller
-          control={control}
-          name="name"
-          rules={{ required: "Name is required" }}
-          render={({ field: { onChange, value } }) => (
-            <>
+        {/* IMAGE */}
+        <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
+          {imageUri ? (
+            <Animated.Image
+              source={{ uri: imageUri }}
+              style={[styles.previewImage, { opacity: imageOpacity }]}
+            />
+          ) : (
+            <Text style={styles.imagePickerText}>Pick Profile Image</Text>
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.card}>
+          {/* Name */}
+          <Text style={styles.sectionTitle}>Basic Info</Text>
+          <Controller
+            control={control}
+            name="name"
+            rules={{ required: "Name is required" }}
+            render={({ field: { onChange, value } }) => (
               <TextInput
                 placeholder="Pet Name"
                 style={styles.input}
                 onChangeText={onChange}
                 value={value}
               />
-              {errors.name && (
-                <Text style={styles.errorText}>{errors.name.message}</Text>
-              )}
-            </>
-          )}
-        />
-
-        {/* Birth Date */}
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          style={styles.input}
-        >
-          <Text
-            style={{ color: birthDate ? "#a0a0a0" : "#a0a0a0", fontSize: 16 }}
-          >
-            {birthDate ? birthDate.toDateString() : "Birth Date"}
-          </Text>
-        </TouchableOpacity>
-        {errors.birth_date && (
-          <Text style={styles.errorText}>{errors.birth_date.message}</Text>
-        )}
-
-        {showDatePicker && (
-          <DateTimePicker
-            value={birthDate}
-            mode="date"
-            display={Platform.OS === "ios" ? "spinner" : "default"}
-            onChange={onDateChange}
-            maximumDate={new Date()}
+            )}
           />
-        )}
+          {errors.name && (
+            <Text style={styles.errorText}>{errors.name.message}</Text>
+          )}
 
-        {/* Select Image */}
-        <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
-          <Text style={styles.imagePickerText}>
-            {imageUri ? "Change Image" : "Pick Image from Gallery"}
-          </Text>
-        </TouchableOpacity>
+          {/* Breed */}
+          <Controller
+            control={control}
+            name="breed"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                placeholder="Breed (e.g. Golden Retriever)"
+                style={styles.input}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+          />
 
-        {imageUri && (
-          <View style={styles.imageWrapper}>
-            <Animated.Image
-              source={{ uri: imageUri }}
-              style={[styles.previewImage, { opacity: imageOpacity }]}
+          {/* Type */}
+          <Controller
+            control={control}
+            name="type"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                placeholder="Type (Dog, Cat, etc.)"
+                style={styles.input}
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+          />
+
+          {/* Weight */}
+          <Controller
+            control={control}
+            name="weight"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                placeholder="Weight (kg)"
+                style={styles.input}
+                keyboardType="numeric"
+                onChangeText={onChange}
+                value={value}
+              />
+            )}
+          />
+
+          {/* Birth Date */}
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.input}
+          >
+            <Text style={{ color: "#0c1d1a", fontSize: 16 }}>
+              {birthDate ? birthDate.toDateString() : "Birth Date"}
+            </Text>
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={birthDate}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              onChange={onDateChange}
+              maximumDate={new Date()}
+            />
+          )}
+
+          {/* Neutered */}
+          <View style={styles.switchRow}>
+            <Text style={styles.switchLabel}>Neutered / Spayed</Text>
+            <Switch
+              value={isNeutered}
+              onValueChange={setIsNeutered}
+              thumbColor={isNeutered ? "#00d1b2" : "#ccc"}
+              trackColor={{ true: "#b9f4ec", false: "#e6f4f2" }}
             />
           </View>
-        )}
+
+          {/* Gender */}
+          <Text style={styles.sectionTitle}>Gender</Text>
+          <View style={styles.genderRow}>
+            {genderOptions.map((gender) => (
+              <TouchableOpacity
+                key={gender}
+                style={[
+                  styles.genderButton,
+                  selectedGender === gender && styles.genderButtonSelected,
+                ]}
+                onPress={() => setSelectedGender(gender)}
+              >
+                <Text
+                  style={[
+                    styles.genderButtonText,
+                    selectedGender === gender && { color: "#fff" },
+                  ]}
+                >
+                  {gender}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
         {/* Submit */}
         <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
@@ -207,9 +292,45 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "700",
-    marginBottom: 24,
+    marginBottom: 16,
     color: "#0c1d1a",
     textAlign: "center",
+  },
+  imagePicker: {
+    backgroundColor: "#e6f4f2",
+    padding: 14,
+    borderRadius: 999,
+    alignItems: "center",
+    marginBottom: 16,
+    alignSelf: "center",
+    width: 160,
+    height: 160,
+    justifyContent: "center",
+  },
+  previewImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 3,
+    borderColor: "#00d1b2",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0c1d1a",
+    marginBottom: 8,
+    marginTop: 12,
   },
   input: {
     backgroundColor: "#e6f4f2",
@@ -225,6 +346,37 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 14,
   },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  switchLabel: {
+    fontSize: 16,
+    color: "#0c1d1a",
+  },
+  genderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  genderButton: {
+    flex: 1,
+    backgroundColor: "#e6f4f2",
+    borderRadius: 999,
+    paddingVertical: 12,
+    marginHorizontal: 4,
+    alignItems: "center",
+  },
+  genderButtonSelected: {
+    backgroundColor: "#00d1b2",
+  },
+  genderButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0c1d1a",
+  },
   button: {
     backgroundColor: "#00d1b2",
     padding: 16,
@@ -236,32 +388,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
-  },
-  imagePicker: {
-    backgroundColor: "#e6f4f2",
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  imagePickerText: {
-    color: "#0c1d1a",
-    fontWeight: "500",
-  },
-  imageWrapper: {
-    alignItems: "center",
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  previewImage: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 3,
-    borderColor: "#00d1b2",
   },
 });

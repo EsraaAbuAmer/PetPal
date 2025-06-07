@@ -6,11 +6,15 @@ import { upload } from '../middleware/upload';
 
 const router = express.Router();
 
-// Define the Pet type here (or import from types.ts)
 type Pet = {
   id: number;
   name: string;
+  breed: string;
+  weight: number;
+  type: string;
   birth_date: string;
+  neutered: number;
+  gender: string;
   image: string;
   updated_at: string;
 };
@@ -19,9 +23,9 @@ type Pet = {
 // @route   POST /api/pets
 // @access  Private
 router.post('/', protect, upload.single('image'), async (req, res) => {
-  const { name, birth_date } = req.body;
   const userId = req.user?.id;
   const imageFile = (req as any).file;
+  const { name, breed, weight, type, birth_date, neutered, gender } = req.body;
 
   if (!name || !birth_date || !imageFile) {
     return res.status(400).json({ message: 'Please provide name, birth_date, and image file' });
@@ -31,8 +35,19 @@ router.post('/', protect, upload.single('image'), async (req, res) => {
     const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageFile.filename}`;
 
     const [result] = await db.execute(
-      'INSERT INTO pets (user_id, name, birth_date, image) VALUES (?, ?, ?, ?)',
-      [userId, name, birth_date, imageUrl]
+      `INSERT INTO pets (user_id, name, breed, weight, type, birth_date, neutered, gender, image)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        name,
+        breed,
+        weight,
+        type,
+        birth_date,
+        neutered ? 1 : 0,
+        gender,
+        imageUrl
+      ]
     ) as [ResultSetHeader, unknown];
 
     res.status(201).json({
@@ -54,7 +69,9 @@ router.get('/', protect, async (req, res) => {
 
   try {
     const [pets] = await db.execute(
-      'SELECT id, name, birth_date, image FROM pets WHERE user_id = ?',
+      `SELECT id, name, breed, weight, type, gender, neutered, birth_date, image
+       FROM pets
+       WHERE user_id = ?`,
       [userId]
     ) as [Omit<Pet, 'updated_at'>[], unknown];
 
@@ -74,7 +91,9 @@ router.get('/:id', protect, async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      'SELECT id, name, birth_date, image, updated_at FROM pets WHERE id = ? AND user_id = ?',
+      `SELECT id, name, breed, weight, type, gender, neutered, birth_date, image, updated_at
+       FROM pets
+       WHERE id = ? AND user_id = ?`,
       [petId, userId]
     ) as [Pet[], unknown];
 
@@ -95,12 +114,14 @@ router.get('/:id', protect, async (req, res) => {
 router.patch('/:id', protect, async (req, res) => {
   const petId = req.params.id;
   const userId = req.user?.id;
-  const { name, birth_date, image } = req.body;
+  const { name, breed, weight, type, birth_date, neutered, gender, image } = req.body;
 
   try {
     const [result] = await db.execute(
-      `UPDATE pets SET name = ?, birth_date = ?, image = ? WHERE id = ? AND user_id = ?`,
-      [name, birth_date, image, petId, userId]
+      `UPDATE pets
+       SET name = ?, breed = ?, weight = ?, type = ?, birth_date = ?, neutered = ?, gender = ?, image = ?
+       WHERE id = ? AND user_id = ?`,
+      [name, breed, weight, type, birth_date, neutered ? 1 : 0, gender, image, petId, userId]
     ) as [ResultSetHeader, unknown];
 
     res.json({ message: 'Pet updated successfully' });
@@ -109,7 +130,5 @@ router.patch('/:id', protect, async (req, res) => {
     res.status(500).json({ message: 'Failed to update pet' });
   }
 });
-
-
 
 export default router;
