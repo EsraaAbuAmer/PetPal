@@ -90,7 +90,6 @@ const AddPetScreen = () => {
       setIsNeutered(false);
       navigation.goBack();
     } catch (err) {
-      console.error("Add pet error:", err);
       Alert.alert("Error", "Could not add pet");
     } finally {
       setIsLoading(false);

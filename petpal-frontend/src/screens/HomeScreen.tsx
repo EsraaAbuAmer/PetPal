@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -10,8 +10,8 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useGetPetsQuery } from "../features/pet/petApi";
-import { useNavigation } from '@react-navigation/native';
-
+import { useNavigation } from "@react-navigation/native";
+import { useIsFocused } from "@react-navigation/native";
 const upcoming = [
   {
     id: "1",
@@ -40,7 +40,6 @@ const healthTips = [
 const calculateAge = (birthDateString: string) => {
   const birthDate = new Date(birthDateString);
   const today = new Date();
-  
 
   let years = today.getFullYear() - birthDate.getFullYear();
   let months = today.getMonth() - birthDate.getMonth();
@@ -68,8 +67,19 @@ const calculateAge = (birthDateString: string) => {
 
 const HomeScreen = () => {
   const navigation = useNavigation();
-  const { data: pets = [], error, isLoading } = useGetPetsQuery(undefined);
+  const isFocused = useIsFocused();
+  const {
+    data: pets = [],
+    error,
+    isLoading,
+    refetch,
+  } = useGetPetsQuery(undefined);
 
+  useEffect(() => {
+    if (isFocused) {
+      refetch(); // Force refresh when returning to HomeScreen
+    }
+  }, [isFocused]);
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>

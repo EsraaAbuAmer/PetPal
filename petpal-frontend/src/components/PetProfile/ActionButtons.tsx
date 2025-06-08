@@ -1,13 +1,18 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
-const ActionButtons = () => {
+interface ActionButtonsProps {
+  onEditPress: () => void;
+  onAddPetPress?: () => void; // optional
+}
+
+const ActionButtons = ({ onEditPress, onAddPetPress }: ActionButtonsProps) => {
   return (
     <View style={styles.buttonRow}>
-      <TouchableOpacity style={styles.editButton}>
-        <Text style={styles.editButtonText}>Edit profile</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
+          <Text style={styles.editButtonText}>Edit profile</Text>
+        </TouchableOpacity>
+      <TouchableOpacity style={styles.addButton} onPress={onAddPetPress}>
         <Text style={styles.addButtonText}>Add pet</Text>
       </TouchableOpacity>
     </View>

@@ -1,11 +1,18 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 const Header = () => {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.headerRow}>
-      <TouchableOpacity onPress={() => {}}>
+      <TouchableOpacity
+        onPress={() =>
+          navigation.navigate("MainTabs", { screen: "Home" })
+        }
+      >
         <Ionicons name="arrow-back" size={24} color="#0c1d1a" />
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Pet Profile</Text>

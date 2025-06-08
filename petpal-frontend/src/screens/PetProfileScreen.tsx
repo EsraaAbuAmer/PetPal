@@ -6,7 +6,10 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
+import { useSelector } from "react-redux";
+
 import { useRoute } from "@react-navigation/native";
 import {
   useGetPetQuery,
@@ -24,6 +27,9 @@ import VaccinationHistorySection from "../components/PetProfile/VaccinationHisto
 import UpcomingEventsSection from "../components/PetProfile/UpcomingEventsSection";
 import AddVaccinationModal from "../components/AddVaccinationModal";
 import AddEventModal from "../components/AddEventModal";
+import EditPetModal from "../components/EditPetModal";
+import { useUpdatePetMutation } from "../features/pet/petApi";
+import { useNavigation } from "@react-navigation/native";
 
 // Helper function
 const capitalize = (str: string) => {
@@ -70,6 +76,57 @@ const PetProfileScreen = () => {
 
   const [vaccinationModalVisible, setVaccinationModalVisible] = useState(false);
   const [eventModalVisible, setEventModalVisible] = useState(false);
+
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedPet, setSelectedPet] = useState<any>(null);
+
+  // When user clicks "Edit profile" button:
+  const handleOpenEditModal = () => {
+    setSelectedPet(pet); // from useGetPetQuery → full pet data
+    setEditModalVisible(true);
+  };
+  const userToken = useSelector((state: any) => state.auth.token);
+  const handleEditPet = async (updatedPet: any, newImageUri: string | null) => {
+    try {
+      const formData = new FormData();
+
+      formData.append("name", updatedPet.name);
+      formData.append("breed", updatedPet.breed);
+      formData.append("weight", updatedPet.weight.toString());
+      formData.append("type", updatedPet.type);
+      formData.append("birth_date", updatedPet.birth_date);
+      formData.append("neutered", updatedPet.neutered ? "1" : "0");
+      formData.append("gender", updatedPet.gender);
+
+      const imageIsLocal = newImageUri?.startsWith("file://");
+
+      if (imageIsLocal) {
+        formData.append("image", {
+          uri: newImageUri,
+          name: "photo.jpg",
+          type: "image/jpeg",
+        } as any);
+      } else if (newImageUri) {
+        formData.append("image_url", newImageUri);
+      }
+
+      await fetch(`http://localhost:5002/api/pets/${updatedPet.id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${userToken}`,
+        },
+        body: formData,
+      });
+
+      refetch();
+      setEditModalVisible(false);
+      Alert.alert("Success", "Pet updated successfully!");
+    } catch (err) {
+      console.error("Failed to update pet:", err);
+      Alert.alert("Error", "Failed to update pet");
+    }
+  };
+  const navigation = useNavigation();
 
   const handleAddVaccination = async (vaccination: {
     name: string;
@@ -144,7 +201,12 @@ const PetProfileScreen = () => {
             pet.gender || "Unknown Gender"
           )} · ${calculateAge(pet.birth_date)}`}
         />
-        <ActionButtons />
+        <ActionButtons
+          onEditPress={handleOpenEditModal}
+          onAddPetPress={() =>
+            navigation.navigate("MainTabs", { screen: "AddPet" })
+          }
+        />
         <Text style={styles.sectionTitle}>Information</Text>
 
         <InfoRow label="Breed" value={capitalize(pet.breed || "Unknown")} />
@@ -188,6 +250,13 @@ const PetProfileScreen = () => {
         visible={eventModalVisible}
         onClose={() => setEventModalVisible(false)}
         onSave={handleAddEvent}
+      />
+
+      <EditPetModal
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+        petData={selectedPet}
+        onSave={handleEditPet}
       />
     </SafeAreaView>
   );

@@ -10,12 +10,11 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
 import PrimaryButton from "../components/PrimaryButton";
-import { useLoginMutation } from '../services/authApi';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useDispatch } from 'react-redux';
-import { setCredentials } from '../features/auth/authSlice';
-
-
+import { useLoginMutation } from "../services/authApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useDispatch } from "react-redux";
+import { setCredentials } from "../features/auth/authSlice";
+import { CommonActions } from "@react-navigation/native";
 
 type FormData = {
   email: string;
@@ -37,21 +36,22 @@ const LoginScreen = () => {
   const onSubmit = async (data: FormData) => {
     try {
       const response = await login(data).unwrap();
-  
+
       // Save token to AsyncStorage
-      await AsyncStorage.setItem('token', response.token);
-      await AsyncStorage.setItem('user', JSON.stringify(response.user));
-  
+      await AsyncStorage.setItem("token", response.token);
+      await AsyncStorage.setItem("user", JSON.stringify(response.user));
+
       // Update Redux
       dispatch(setCredentials({ user: response.user, token: response.token }));
-  
-      // Navigate to main screen
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'MainTabs' }],
-      }); // Replace with your actual route
+
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "MainTabs" }],
+        })
+      );
     } catch (err: any) {
-      console.error('Login failed:', err);
+      console.error("Login failed:", err);
     }
   };
 
