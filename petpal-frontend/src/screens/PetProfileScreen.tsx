@@ -9,14 +9,15 @@ import {
   Alert,
 } from "react-native";
 import { useSelector } from "react-redux";
+import { useRoute, useNavigation } from "@react-navigation/native";
 
-import { useRoute } from "@react-navigation/native";
 import {
   useGetPetQuery,
   useGetVaccinationsQuery,
   useAddVaccinationMutation,
   useGetEventsQuery,
   useAddEventMutation,
+  useUpdatePetMutation,
 } from "../features/pet/petApi";
 
 import Header from "../components/PetProfile/Header";
@@ -28,8 +29,6 @@ import UpcomingEventsSection from "../components/PetProfile/UpcomingEventsSectio
 import AddVaccinationModal from "../components/AddVaccinationModal";
 import AddEventModal from "../components/AddEventModal";
 import EditPetModal from "../components/EditPetModal";
-import { useUpdatePetMutation } from "../features/pet/petApi";
-import { useNavigation } from "@react-navigation/native";
 
 // Helper function
 const capitalize = (str: string) => {
@@ -62,12 +61,12 @@ const calculateAge = (birthDateString: string) => {
 
 const PetProfileScreen = () => {
   const route = useRoute();
+  const navigation = useNavigation();
   const { petId }: any = route.params;
 
   const { data: pet, error, isLoading, refetch } = useGetPetQuery(petId);
   const { data: vaccinationsList = [], refetch: refetchVaccinations } =
     useGetVaccinationsQuery(petId);
-
   const { data: eventsList = [], refetch: refetchEvents } =
     useGetEventsQuery(petId);
 
@@ -76,16 +75,20 @@ const PetProfileScreen = () => {
 
   const [vaccinationModalVisible, setVaccinationModalVisible] = useState(false);
   const [eventModalVisible, setEventModalVisible] = useState(false);
-
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedPet, setSelectedPet] = useState<any>(null);
 
-  // When user clicks "Edit profile" button:
+  // New: Default dates for modals
+  const [defaultVaccinationDate, setDefaultVaccinationDate] = useState(new Date());
+  const [defaultEventDate, setDefaultEventDate] = useState(new Date());
+
+  const userToken = useSelector((state: any) => state.auth.token);
+
   const handleOpenEditModal = () => {
-    setSelectedPet(pet); // from useGetPetQuery → full pet data
+    setSelectedPet(pet);
     setEditModalVisible(true);
   };
-  const userToken = useSelector((state: any) => state.auth.token);
+
   const handleEditPet = async (updatedPet: any, newImageUri: string | null) => {
     try {
       const formData = new FormData();
@@ -99,7 +102,6 @@ const PetProfileScreen = () => {
       formData.append("gender", updatedPet.gender);
 
       const imageIsLocal = newImageUri?.startsWith("file://");
-
       if (imageIsLocal) {
         formData.append("image", {
           uri: newImageUri,
@@ -126,7 +128,6 @@ const PetProfileScreen = () => {
       Alert.alert("Error", "Failed to update pet");
     }
   };
-  const navigation = useNavigation();
 
   const handleAddVaccination = async (vaccination: {
     name: string;
@@ -158,7 +159,7 @@ const PetProfileScreen = () => {
     try {
       await addEvent({
         petId,
-        event, // keys are correct
+        event,
       }).unwrap();
 
       refetchEvents();
@@ -219,12 +220,16 @@ const PetProfileScreen = () => {
           label="Weight"
           value={pet.weight ? `${pet.weight} kg` : "Unknown"}
         />
+
         <VaccinationHistorySection
           vaccinations={vaccinationsList.map((v: any) => ({
             name: capitalize(v.vaccine_name),
             dueDate: new Date(v.date_administered).toISOString().split("T")[0],
           }))}
-          onAddPress={() => setVaccinationModalVisible(true)}
+          onAddPress={() => {
+            setDefaultVaccinationDate(new Date());
+            setVaccinationModalVisible(true);
+          }}
         />
 
         <UpcomingEventsSection
@@ -233,7 +238,10 @@ const PetProfileScreen = () => {
             date: new Date(e.event_date).toISOString().split("T")[0],
             location: e.notes,
           }))}
-          onAddPress={() => setEventModalVisible(true)}
+          onAddPress={() => {
+            setDefaultEventDate(new Date());
+            setEventModalVisible(true);
+          }}
         />
 
         <View style={{ height: 30 }} />
@@ -244,12 +252,14 @@ const PetProfileScreen = () => {
         visible={vaccinationModalVisible}
         onClose={() => setVaccinationModalVisible(false)}
         onSave={handleAddVaccination}
+        defaultDate={defaultVaccinationDate}
       />
 
       <AddEventModal
         visible={eventModalVisible}
         onClose={() => setEventModalVisible(false)}
         onSave={handleAddEvent}
+        defaultDate={defaultEventDate}
       />
 
       <EditPetModal

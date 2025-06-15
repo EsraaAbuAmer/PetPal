@@ -1,7 +1,7 @@
 import { api } from "../../services/api";
 
 export const petApi = api.injectEndpoints({
-  tagTypes: ["Pets"], // ✅ Important: enable cache invalidation
+  tagTypes: ["Pets", "Events"], // ✅ Important: enable cache invalidation
 
   endpoints: (builder) => ({
     addPet: builder.mutation({
@@ -53,6 +53,7 @@ export const petApi = api.injectEndpoints({
         method: "POST",
         body: event,
       }),
+      invalidatesTags: ["Events"], 
     }),
 
     updatePet: builder.mutation({
@@ -65,6 +66,10 @@ export const petApi = api.injectEndpoints({
         { type: "Pets", id: petId },
         "Pets",
       ],
+    }),
+    getUpcomingEvents: builder.query({
+      query: () => `/events/upcoming`, 
+      providesTags: ["Events"],
     }),
   }),
 
@@ -80,4 +85,5 @@ export const {
   useGetEventsQuery,
   useAddEventMutation,
   useUpdatePetMutation,
+  useGetUpcomingEventsQuery, 
 } = petApi;

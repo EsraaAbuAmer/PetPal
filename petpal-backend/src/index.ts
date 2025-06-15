@@ -8,6 +8,7 @@ import vaccinationRoutes from './routes/vaccinations';
 import eventRoutes from './routes/events';
 
 
+
 dotenv.config();
 const app = express();
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -6,28 +6,35 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { Platform } from "react-native";
 
 interface AddVaccinationModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (vaccination: { name: string; dueDate: string }) => void;
+  defaultDate: Date;
 }
 
 const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
   visible,
   onClose,
   onSave,
+  defaultDate,
 }) => {
   const [name, setName] = useState("");
-  const [dueDate, setDueDate] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  useEffect(() => {
+    if (visible) {
+      setSelectedDate(defaultDate || new Date());
+    }
+  }, [visible, defaultDate]);
+
   const handleSave = () => {
-    const formattedDate = selectedDate.toISOString().split("T")[0]; // YYYY-MM-DD
+    const formattedDate = selectedDate.toISOString().split("T")[0];
     if (name && formattedDate) {
       onSave({ name, dueDate: formattedDate });
       setName("");
@@ -53,7 +60,7 @@ const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
           >
             <Text style={{ color: selectedDate ? "#0c1d1a" : "#45a193" }}>
               {selectedDate
-                ? selectedDate.toISOString().split('T')[0]
+                ? selectedDate.toISOString().split("T")[0]
                 : "Select Due Date"}
             </Text>
           </TouchableOpacity>

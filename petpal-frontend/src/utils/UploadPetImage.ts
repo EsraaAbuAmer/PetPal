@@ -13,7 +13,7 @@ export const uploadPetImage = async (imageUri: string): Promise<string> => {
   } as any);
 
   const response = await axios.post(
-    'http://192.168.1.XYZ:5002/api/pets/upload-image', // You'll add this route (I'll show below)
+    'http://192.168.1.XYZ:5002/api/pets/upload-image', 
     formData,
     {
       headers: {

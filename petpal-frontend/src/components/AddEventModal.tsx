@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -14,26 +14,34 @@ interface AddEventModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (event: { event_title: string; event_date: string; notes: string }) => void;
+  defaultDate: Date;
 }
 
 const AddEventModal: React.FC<AddEventModalProps> = ({
   visible,
   onClose,
   onSave,
+  defaultDate,
 }) => {
   const [event_title, setEventTitle] = useState('');
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(defaultDate);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
+
+
+    useEffect(() => {
+      if (visible) {
+        setSelectedDate(defaultDate);
+      }
+    }, [visible, defaultDate]);
 
   const handleSave = () => {
     if (event_title && selectedDate && notes) {
       onSave({
         event_title,
-        event_date: selectedDate.toISOString().split('T')[0], // YYYY-MM-DD
+        event_date: selectedDate.toISOString().split('T')[0],
         notes,
       });
-      // reset fields
       setEventTitle('');
       setSelectedDate(null);
       setNotes('');
@@ -100,7 +108,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
       </View>
     </Modal>
   );
-};
+}
 
 export default AddEventModal;
 

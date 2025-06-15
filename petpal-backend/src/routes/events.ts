@@ -63,4 +63,35 @@ router.post('/pets/:id/events', protect, async (req, res) => {
   }
 });
 
+
+router.get("/events/upcoming", protect, async (req, res) => {
+  const userId = req.user?.id;
+
+  try {
+    const [rows] = await db.execute(
+      `
+      SELECT 
+        e.id AS eventId,
+        e.event_title AS type,
+        e.event_date AS date,
+        p.id AS petId,
+        p.name AS petName,
+        p.image AS petImage
+      FROM events e
+      JOIN pets p ON e.pet_id = p.id
+      WHERE p.user_id = ?
+        AND e.event_date >= CURDATE()
+      ORDER BY e.event_date ASC
+      LIMIT 10
+      `,
+      [userId]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Failed to fetch upcoming events:", error);
+    res.status(500).json({ message: "Failed to fetch upcoming events" });
+  }
+});
+
 export default router;
