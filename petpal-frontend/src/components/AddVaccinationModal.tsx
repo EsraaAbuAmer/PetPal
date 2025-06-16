@@ -10,11 +10,18 @@ import {
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
+interface VaccinationData {
+  id?: number;
+  name: string;
+  dueDate: string;
+}
+
 interface AddVaccinationModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (vaccination: { name: string; dueDate: string }) => void;
+  onSave: (vaccination: VaccinationData) => void;
   defaultDate: Date;
+  existingVaccination?: VaccinationData | null;
 }
 
 const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
@@ -22,6 +29,7 @@ const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
   onClose,
   onSave,
   defaultDate,
+  existingVaccination = null,
 }) => {
   const [name, setName] = useState("");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -29,39 +37,57 @@ const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
 
   useEffect(() => {
     if (visible) {
-      setSelectedDate(defaultDate || new Date());
+      if (existingVaccination) {
+        setName(existingVaccination.name);
+        setSelectedDate(new Date(existingVaccination.dueDate));
+      } else {
+        setName("");
+        setSelectedDate(defaultDate || new Date());
+      }
     }
-  }, [visible, defaultDate]);
+  }, [visible, existingVaccination, defaultDate]);
 
   const handleSave = () => {
     const formattedDate = selectedDate.toISOString().split("T")[0];
-    if (name && formattedDate) {
-      onSave({ name, dueDate: formattedDate });
-      setName("");
-      setSelectedDate(new Date());
-      onClose();
+    const trimmedName = name.trim();
+
+    if (!trimmedName || !formattedDate) return;
+
+    const payload: VaccinationData = {
+      name: trimmedName,
+      dueDate: formattedDate,
+    };
+
+    if (existingVaccination?.id) {
+      payload.id = existingVaccination.id;
     }
+
+    onSave(payload);
+    onClose();
   };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          <Text style={styles.title}>Add Vaccination</Text>
+          <Text style={styles.title}>
+            {existingVaccination ? "Update Vaccination" : "Add Vaccination"}
+          </Text>
+
           <TextInput
             placeholder="Vaccine Name"
             style={styles.input}
             value={name}
             onChangeText={setName}
+            autoFocus
           />
+
           <TouchableOpacity
             style={styles.input}
             onPress={() => setShowDatePicker(true)}
           >
-            <Text style={{ color: selectedDate ? "#0c1d1a" : "#45a193" }}>
-              {selectedDate
-                ? selectedDate.toISOString().split("T")[0]
-                : "Select Due Date"}
+            <Text style={{ color: "#0c1d1a" }}>
+              {selectedDate.toISOString().split("T")[0]}
             </Text>
           </TouchableOpacity>
 
@@ -72,18 +98,26 @@ const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
               display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={(event, date) => {
                 setShowDatePicker(false);
-                if (date) {
-                  setSelectedDate(date);
-                }
+                if (date) setSelectedDate(date);
               }}
             />
           )}
+
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.buttonText}>Save</Text>
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                !(name.trim() && selectedDate) && { opacity: 0.5 },
+              ]}
+              onPress={handleSave}
+              disabled={!name.trim() || !selectedDate}
+            >
+              <Text style={styles.buttonText}>
+                {existingVaccination ? "Update" : "Save"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

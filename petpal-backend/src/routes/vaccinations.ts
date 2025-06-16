@@ -64,4 +64,67 @@ router.post('/pets/:id/vaccinations', protect, async (req, res) => {
   }
 });
 
+// PATCH /api/vaccinations/:vaccinationId
+router.patch('/vaccinations/:vaccinationId', protect, async (req, res) => {
+  const { vaccinationId } = req.params;
+  const userId = req.user?.id;
+  const { vaccine_name, date_administered, notes } = req.body;
+
+  try {
+    // Confirm vaccination belongs to a pet owned by the user
+    const [rows] = await db.execute(
+      `SELECT v.id FROM vaccinations v
+       JOIN pets p ON v.pet_id = p.id
+       WHERE v.id = ? AND p.user_id = ?`,
+      [vaccinationId, userId]
+    );
+
+    if ((rows as any[]).length === 0) {
+      return res.status(404).json({ message: 'Vaccination not found or unauthorized' });
+    }
+
+    await db.execute(
+      `UPDATE vaccinations
+       SET vaccine_name = ?, date_administered = ?, notes = ?
+       WHERE id = ?`,
+      [vaccine_name, date_administered, notes, vaccinationId]
+    );
+
+    res.json({ message: 'Vaccination updated successfully' });
+  } catch (error) {
+    console.error('Update vaccination error:', error);
+    res.status(500).json({ message: 'Failed to update vaccination' });
+  }
+});
+
+// DELETE /api/vaccinations/:vaccinationId
+router.delete('/vaccinations/:vaccinationId', protect, async (req, res) => {
+  const { vaccinationId } = req.params;
+  const userId = req.user?.id;
+
+  try {
+    // Confirm ownership
+    const [rows] = await db.execute(
+      `SELECT v.id FROM vaccinations v
+       JOIN pets p ON v.pet_id = p.id
+       WHERE v.id = ? AND p.user_id = ?`,
+      [vaccinationId, userId]
+    );
+
+    if ((rows as any[]).length === 0) {
+      return res.status(404).json({ message: 'Vaccination not found or unauthorized' });
+    }
+
+    await db.execute(`DELETE FROM vaccinations WHERE id = ?`, [vaccinationId]);
+
+    res.json({ message: 'Vaccination deleted successfully' });
+  } catch (error) {
+    console.error('Delete vaccination error:', error);
+    res.status(500).json({ message: 'Failed to delete vaccination' });
+  }
+});
+
+
+
+
 export default router;
