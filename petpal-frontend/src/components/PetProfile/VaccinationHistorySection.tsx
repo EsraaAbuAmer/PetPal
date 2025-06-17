@@ -100,15 +100,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: 16,
     paddingHorizontal: 8,
-    
-    marginLeft:15
-
+    marginLeft: 15,
+    width: "100%",
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: "#0c1d1a",
-
   },
   emptyText: {
     fontSize: 14,
@@ -125,9 +123,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     marginBottom: 8,
     borderRadius: 12,
-    backgroundColor: "#e6f4f2", 
-    marginLeft:20
- 
+    backgroundColor: "#e6f4f2",
+    marginLeft: 20,
   },
   underlayRight: {
     backgroundColor: "#ff5c5c",
@@ -137,7 +134,7 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: 12,
     marginBottom: 8,
-     flexDirection: "row",
+    flexDirection: "row",
   },
   fullWidth: {
     width: screenWidth,

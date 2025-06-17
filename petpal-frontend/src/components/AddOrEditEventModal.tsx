@@ -10,43 +10,67 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-interface AddEventModalProps {
+interface AddOrEditEventModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (event: { event_title: string; event_date: string; notes: string }) => void;
+  onSave: (event: {
+    event_title: string;
+    event_date: string;
+    notes: string;
+  }) => void;
   defaultDate: Date;
+  existingEvent?: {
+    id: number;
+    title: string;
+    date: string;
+    notes: string;
+  };
 }
 
-const AddEventModal: React.FC<AddEventModalProps> = ({
+const AddOrEditEventModal: React.FC<AddOrEditEventModalProps> = ({
   visible,
   onClose,
   onSave,
   defaultDate,
+  existingEvent,
 }) => {
-  const [event_title, setEventTitle] = useState('');
-  const [selectedDate, setSelectedDate] = useState<Date>(defaultDate);
+  const [eventTitle, setEventTitle] = useState('');
+  const [selectedDate, setSelectedDate] = useState<Date>(defaultDate || new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
+  const [errors, setErrors] = useState<{ title?: string; notes?: string }>({});
 
-
-    useEffect(() => {
-      if (visible) {
-        setSelectedDate(defaultDate);
+  useEffect(() => {
+    if (visible) {
+      setErrors({});
+      if (existingEvent) {
+        setEventTitle(existingEvent.title);
+        setSelectedDate(new Date(existingEvent.date));
+        setNotes(existingEvent.notes);
+      } else {
+        setEventTitle('');
+        setSelectedDate(defaultDate || new Date());
+        setNotes('');
       }
-    }, [visible, defaultDate]);
+    }
+  }, [visible, defaultDate, existingEvent]);
 
   const handleSave = () => {
-    if (event_title && selectedDate && notes) {
-      onSave({
-        event_title,
-        event_date: selectedDate.toISOString().split('T')[0],
-        notes,
-      });
-      setEventTitle('');
-      setSelectedDate(null);
-      setNotes('');
-      onClose();
+    const newErrors: typeof errors = {};
+    if (!eventTitle.trim()) newErrors.title = 'Event title is required.';
+    if (!notes.trim()) newErrors.notes = 'Notes are required.';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
     }
+
+    onSave({
+      event_title: eventTitle.trim(),
+      event_date: selectedDate.toISOString().split('T')[0],
+      notes: notes.trim(),
+    });
+    onClose();
   };
 
   const onDateChange = (_event: any, selected?: Date) => {
@@ -60,21 +84,27 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
         <View style={styles.modal}>
-          <Text style={styles.title}>Add Event</Text>
+          <Text style={styles.title}>
+            {existingEvent ? 'Edit Event' : 'Add Event'}
+          </Text>
 
           <TextInput
             placeholder="Event Title"
-            style={styles.input}
-            value={event_title}
-            onChangeText={setEventTitle}
+            style={[styles.input, errors.title && styles.inputError]}
+            value={eventTitle}
+            onChangeText={(text) => {
+              setEventTitle(text);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
+            }}
           />
+          {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
 
           <TouchableOpacity
             onPress={() => setShowDatePicker(true)}
             style={[styles.input, { justifyContent: 'center' }]}
           >
             <Text style={{ color: '#0c1d1a' }}>
-              {selectedDate
+              {selectedDate instanceof Date
                 ? selectedDate.toISOString().split('T')[0]
                 : 'Select Event Date'}
             </Text>
@@ -82,7 +112,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
 
           {showDatePicker && (
             <DateTimePicker
-              value={selectedDate || new Date()}
+              value={selectedDate instanceof Date ? selectedDate : new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={onDateChange}
@@ -91,10 +121,14 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
 
           <TextInput
             placeholder="Notes"
-            style={styles.input}
+            style={[styles.input, errors.notes && styles.inputError]}
             value={notes}
-            onChangeText={setNotes}
+            onChangeText={(text) => {
+              setNotes(text);
+              if (errors.notes) setErrors((prev) => ({ ...prev, notes: undefined }));
+            }}
           />
+          {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
 
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
@@ -108,9 +142,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
       </View>
     </Modal>
   );
-}
+};
 
-export default AddEventModal;
+export default AddOrEditEventModal;
 
 const styles = StyleSheet.create({
   overlay: {
@@ -139,6 +173,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#0c1d1a',
     marginBottom: 12,
+  },
+  inputError: {
+    borderWidth: 1,
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginBottom: 8,
   },
   buttonRow: {
     flexDirection: 'row',

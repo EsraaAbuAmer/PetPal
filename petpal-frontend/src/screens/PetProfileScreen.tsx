@@ -15,8 +15,12 @@ import {
   useGetPetQuery,
   useGetVaccinationsQuery,
   useAddVaccinationMutation,
+  useUpdateVaccinationMutation,
+  useDeleteVaccinationMutation,
   useGetEventsQuery,
   useAddEventMutation,
+  useDeleteEventMutation,
+  useUpdateEventMutation,
 } from "../features/pet/petApi";
 
 import Header from "../components/PetProfile/Header";
@@ -26,10 +30,9 @@ import InfoRow from "../components/PetProfile/InfoRow";
 import VaccinationHistorySection from "../components/PetProfile/VaccinationHistorySection";
 import UpcomingEventsSection from "../components/PetProfile/UpcomingEventsSection";
 import AddVaccinationModal from "../components/AddVaccinationModal";
-import AddEventModal from "../components/AddEventModal";
+import AddOrEditEventModal from "../components/AddOrEditEventModal";
 import EditPetModal from "../components/EditPetModal";
 
-// Utility
 const capitalize = (str: string) =>
   str
     .toLowerCase()
@@ -64,7 +67,11 @@ const PetProfileScreen = () => {
     useGetEventsQuery(petId);
 
   const [addVaccination] = useAddVaccinationMutation();
+  const [updateVaccination] = useUpdateVaccinationMutation();
+  const [deleteVaccination] = useDeleteVaccinationMutation();
   const [addEvent] = useAddEventMutation();
+  const [updateEvent] = useUpdateEventMutation();
+  const [deleteEvent] = useDeleteEventMutation();
 
   const [vaccinationModalVisible, setVaccinationModalVisible] = useState(false);
   const [eventModalVisible, setEventModalVisible] = useState(false);
@@ -72,6 +79,7 @@ const PetProfileScreen = () => {
 
   const [selectedPet, setSelectedPet] = useState<any>(null);
   const [editingVaccination, setEditingVaccination] = useState<any>(null);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
 
   const [defaultVaccinationDate, setDefaultVaccinationDate] = useState(new Date());
   const [defaultEventDate, setDefaultEventDate] = useState(new Date());
@@ -79,6 +87,15 @@ const PetProfileScreen = () => {
   const handleOpenEditModal = () => {
     setSelectedPet(pet);
     setEditModalVisible(true);
+  };
+
+  const handleDeleteEvent = async (eventId: number) => {
+    try {
+      await deleteEvent(eventId).unwrap();
+      refetchEvents();
+    } catch (err) {
+      Alert.alert("Error", "Could not delete event");
+    }
   };
 
   const handleEditPet = async (updatedPet: any, newImageUri: string | null) => {
@@ -126,18 +143,14 @@ const PetProfileScreen = () => {
   }) => {
     try {
       if (vaccination.id) {
-        await fetch(`http://localhost:5002/api/vaccinations/${vaccination.id}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${userToken}`,
-          },
-          body: JSON.stringify({
+        await updateVaccination({
+          vaccinationId: vaccination.id,
+          updatedVaccination: {
             vaccine_name: vaccination.name,
             date_administered: vaccination.dueDate,
             notes: vaccination.notes || "",
-          }),
-        });
+          },
+        }).unwrap();
       } else {
         await addVaccination({
           petId,
@@ -159,10 +172,7 @@ const PetProfileScreen = () => {
 
   const handleDeleteVaccination = async (id: number) => {
     try {
-      await fetch(`http://localhost:5002/api/vaccinations/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${userToken}` },
-      });
+      await deleteVaccination(id).unwrap();
       refetchVaccinations();
     } catch (err) {
       console.error("Failed to delete vaccination:", err);
@@ -170,17 +180,22 @@ const PetProfileScreen = () => {
     }
   };
 
-  const handleAddEvent = async (event: {
-    event_title: string;
-    event_date: string;
-    notes: string;
-  }) => {
+  const handleSaveEvent = async (eventData) => {
     try {
-      await addEvent({ petId, event }).unwrap();
-      refetchEvents();
+      if (editingEvent?.id) {
+        await updateEvent({
+          eventId: editingEvent.id,
+          updatedEvent: eventData,
+        }).unwrap();
+      } else {
+        await addEvent({ petId, event: eventData }).unwrap();
+      }
+
       setEventModalVisible(false);
+      setEditingEvent(null);
+      refetchEvents();
     } catch (err) {
-      console.error("Failed to add event:", err);
+      console.error("Failed to save event:", err);
     }
   };
 
@@ -219,12 +234,17 @@ const PetProfileScreen = () => {
         />
         <ActionButtons
           onEditPress={handleOpenEditModal}
-          onAddPetPress={() => navigation.navigate("MainTabs", { screen: "AddPet" })}
+          onAddPetPress={() =>
+            navigation.navigate("MainTabs", { screen: "AddPet" })
+          }
         />
         <Text style={styles.sectionTitle}>Information</Text>
         <InfoRow label="Breed" value={capitalize(pet.breed)} />
         <InfoRow label="Spayed/Neutered" value={pet.neutered ? "Yes" : "No"} />
-        <InfoRow label="Birthday" value={new Date(pet.birth_date).toDateString()} />
+        <InfoRow
+          label="Birthday"
+          value={new Date(pet.birth_date).toDateString()}
+        />
         <InfoRow label="Weight" value={`${pet.weight} kg`} />
 
         <VaccinationHistorySection
@@ -248,14 +268,22 @@ const PetProfileScreen = () => {
 
         <UpcomingEventsSection
           events={eventsList.map((e: any) => ({
+            id: e.id,
             title: capitalize(e.event_title),
             date: new Date(e.event_date).toISOString().split("T")[0],
-            location: e.notes,
+            notes: e.notes,
           }))}
           onAddPress={() => {
+            setEditingEvent(null);
             setDefaultEventDate(new Date());
             setEventModalVisible(true);
           }}
+          onEditPress={(ev) => {
+            setEditingEvent(ev);
+            setDefaultEventDate(new Date(ev.date));
+            setEventModalVisible(true);
+          }}
+          onDeletePress={handleDeleteEvent}
         />
 
         <View style={{ height: 30 }} />
@@ -271,12 +299,15 @@ const PetProfileScreen = () => {
         defaultDate={defaultVaccinationDate}
         existingVaccination={editingVaccination}
       />
-
-      <AddEventModal
+      <AddOrEditEventModal
         visible={eventModalVisible}
-        onClose={() => setEventModalVisible(false)}
-        onSave={handleAddEvent}
+        onClose={() => {
+          setEventModalVisible(false);
+          setEditingEvent(null);
+        }}
+        onSave={handleSaveEvent}
         defaultDate={defaultEventDate}
+        existingEvent={editingEvent}
       />
 
       <EditPetModal

@@ -4,14 +4,16 @@ import { View, Text, StyleSheet } from "react-native";
 interface Props {
   title: string;
   date: string;
+  notes:string
 }
 
-const EventRow = ({ title, date }: Props) => {
+const EventRow = ({ title, date ,notes}: Props) => {
   return (
     <View style={styles.listRow}>
       <View>
         <Text style={styles.listTitle}>{title}</Text>
         <Text style={styles.listSub}>{date}</Text>
+        <Text style={styles.listSub}>{notes}</Text>
 
       </View>
     </View>

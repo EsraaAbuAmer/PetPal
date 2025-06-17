@@ -94,4 +94,72 @@ router.get("/events/upcoming", protect, async (req, res) => {
   }
 });
 
+// DELETE /api/events/:eventId
+router.delete("/events/:eventId", protect, async (req, res) => {
+  const eventId = req.params.eventId;
+  const userId = req.user?.id;
+
+  try {
+    // Verify ownership
+    const [rows] = await db.execute(
+      `SELECT e.id 
+       FROM events e
+       JOIN pets p ON e.pet_id = p.id
+       WHERE e.id = ? AND p.user_id = ?`,
+      [eventId, userId]
+    );
+
+    if ((rows as any[]).length === 0) {
+      return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
+    await db.execute(`DELETE FROM events WHERE id = ?`, [eventId]);
+
+    res.json({ message: "Event deleted successfully" });
+  } catch (error) {
+    console.error("Delete event error:", error);
+    res.status(500).json({ message: "Failed to delete event" });
+  }
+});
+
+// PATCH /api/events/:eventId
+router.patch("/events/:eventId", protect, async (req, res) => {
+  const eventId = req.params.eventId;
+  const userId = req.user?.id;
+  const { event_title, event_date, notes } = req.body;
+
+  try {
+    // Verify ownership
+    const [rows] = await db.execute(
+      `SELECT e.id 
+       FROM events e
+       JOIN pets p ON e.pet_id = p.id
+       WHERE e.id = ? AND p.user_id = ?`,
+      [eventId, userId]
+    );
+
+    if ((rows as any[]).length === 0) {
+      return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
+    await db.execute(
+      `UPDATE events SET event_title = ?, event_date = ?, notes = ? WHERE id = ?`,
+      [event_title, event_date, notes, eventId]
+    );
+
+    res.json({
+      message: "Event updated successfully",
+      updated: {
+        id: eventId,
+        event_title,
+        event_date,
+        notes,
+      },
+    });
+  } catch (error) {
+    console.error("Update event error:", error);
+    res.status(500).json({ message: "Failed to update event" });
+  }
+});
+
 export default router;

@@ -45,7 +45,6 @@ const HomeScreen = () => {
   const isFocused = useIsFocused();
   const { data: pets = [], isLoading, refetch } = useGetPetsQuery();
   const { data: events = [] } = useGetUpcomingEventsQuery();
-
   const [showAllEvents, setShowAllEvents] = useState(false);
   const visibleEvents = showAllEvents ? events : events.slice(0, 3);
 
