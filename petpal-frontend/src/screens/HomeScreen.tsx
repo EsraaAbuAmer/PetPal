@@ -64,33 +64,6 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Upcoming</Text>
-        <Text style={styles.sectionSubtitle}>
-          Don’t forget these important tasks 🗓️
-        </Text>
-        {visibleEvents.map((item) => (
-          <View style={styles.card} key={item.eventId}>
-            <Image source={{ uri: item.petImage }} style={styles.avatar} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name}>{item.petName}</Text>
-              <Text style={styles.subtitle}>{item.type}</Text>
-            </View>
-            <View style={styles.badge}> 
-              <Text style={styles.badgeText}>{new Date(item.date).toDateString()}</Text>
-            </View>
-          </View>
-        ))}
-        {events.length > 3 && (
-          <TouchableOpacity
-            onPress={() => setShowAllEvents(!showAllEvents)}
-            style={{ marginBottom: 10 }}
-          >
-            <Text style={{ color: "#00b89c", textAlign: "center" }}>
-              {showAllEvents ? "Show less" : "Show more"}
-            </Text>
-          </TouchableOpacity>
-        )}
-
         <Text style={styles.sectionTitle}>Your Pets</Text>
         <Text style={styles.sectionSubtitle}>
           Say hello to your furry family 🐾
@@ -104,17 +77,52 @@ const HomeScreen = () => {
             <TouchableOpacity
               key={item.id}
               style={styles.card}
-              onPress={() => navigation.navigate("PetProfile", { petId: item.id })}
+              onPress={() =>
+                navigation.navigate("PetProfile", { petId: item.id })
+              }
             >
-              <Image source={{ uri: item.image }} style={styles.avatarBordered} />
+              <Image
+                source={{ uri: item.image }}
+                style={styles.avatarBordered}
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.name}>{item.name}</Text>
               </View>
-              <Text style={styles.time}>Age: {calculateAge(item.birth_date)}</Text>
+              <Text style={styles.time}>
+                Age: {calculateAge(item.birth_date)}
+              </Text>
             </TouchableOpacity>
           ))
         )}
 
+        <Text style={styles.sectionTitle}>Upcoming Events</Text>
+        <Text style={styles.sectionSubtitle}>
+          Don’t forget these important tasks 🗓️
+        </Text>
+        {visibleEvents.map((item) => (
+          <View style={styles.card} key={item.eventId}>
+            <Image source={{ uri: item.petImage }} style={styles.avatar} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.name}>{item.petName}</Text>
+              <Text style={styles.subtitle}>{item.type}</Text>
+            </View>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {new Date(item.date).toDateString()}
+              </Text>
+            </View>
+          </View>
+        ))}
+        {events.length > 3 && (
+          <TouchableOpacity
+            onPress={() => setShowAllEvents(!showAllEvents)}
+            style={{ marginBottom: 10 }}
+          >
+            <Text style={{ color: "#00b89c", textAlign: "center" }}>
+              {showAllEvents ? "Show less" : "Show more"}
+            </Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.sectionTitle}>Health Tips</Text>
         <Text style={styles.sectionSubtitle}>
           Daily care makes happy pets 🧠
@@ -131,61 +139,110 @@ const HomeScreen = () => {
 };
 
 export default HomeScreen;
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fcfb" },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  container: {
+    flex: 1,
+    backgroundColor: "#f1fdfc",
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 60,
+  },
   header: {
-    paddingTop: 20,
-    paddingBottom: 10,
+    paddingTop: 30,
+    paddingBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  headerText: { fontSize: 24, fontWeight: "700", color: "#0c1d1a" },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#0c1d1a", marginTop: 24 },
-  sectionSubtitle: { fontSize: 14, color: "#6e7d78", marginBottom: 12 },
+  headerText: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#0a2e2c",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#0a2e2c",
+    marginTop: 28,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: "#5d7672",
+    marginBottom: 16,
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#ffffff",
-    padding: 12,
-    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    borderRadius: 18,
     marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 14,
+  },
+  avatarBordered: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 14,
+    borderWidth: 2,
+    borderColor: "#00d1b2",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0c1d1a",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#6e7d78",
+    marginTop: 2,
+  },
+  time: {
+    fontSize: 13,
+    color: "#1a8d7d",
+    fontWeight: "600",
+  },
+  badge: {
+    backgroundColor: "#d1f7f0",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    alignSelf: "flex-start",
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#00b89c",
+  },
+  tipCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    borderLeftWidth: 4,
+    borderLeftColor: "#00d1b2",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
-    elevation: 2,
-  },
-  avatar: { width: 50, height: 50, borderRadius: 25, marginRight: 12 },
-  avatarBordered: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: "#00d1b2",
-  },
-  name: { fontSize: 16, fontWeight: "600", color: "#0c1d1a" },
-  subtitle: { fontSize: 14, color: "#6e7d78", marginTop: 2 },
-  time: { fontSize: 14, color: "#45a193", fontWeight: "500" },
-  badge: {
-    backgroundColor: "#e6f4f2",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  badgeText: { fontSize: 12, fontWeight: "600", color: "#00b89c" },
-  tipCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 2,
     elevation: 1,
   },
 });
