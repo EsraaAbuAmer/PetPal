@@ -7,6 +7,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Pressable,
+  Dimensions,
+  ScrollView,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -44,6 +49,7 @@ const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
         setName("");
         setSelectedDate(defaultDate || new Date());
       }
+      setShowDatePicker(false);
     }
   }, [visible, existingVaccination, defaultDate]);
 
@@ -66,62 +72,76 @@ const AddVaccinationModal: React.FC<AddVaccinationModalProps> = ({
     onClose();
   };
 
+  const handleOpenDatePicker = () => {
+    Keyboard.dismiss();
+    setShowDatePicker(true);
+  };
+
+  const screenWidth = Dimensions.get("window").width;
+
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <Text style={styles.title}>
-            {existingVaccination ? "Update Vaccination" : "Add Vaccination"}
-          </Text>
-
-          <TextInput
-            placeholder="Vaccine Name"
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            autoFocus
-          />
-
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={{ color: "#0c1d1a" }}>
-              {selectedDate.toISOString().split("T")[0]}
-            </Text>
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(event, date) => {
-                setShowDatePicker(false);
-                if (date) setSelectedDate(date);
-              }}
-            />
-          )}
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                !(name.trim() && selectedDate) && { opacity: 0.5 },
-              ]}
-              onPress={handleSave}
-              disabled={!name.trim() || !selectedDate}
-            >
-              <Text style={styles.buttonText}>
-                {existingVaccination ? "Update" : "Save"}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { width: screenWidth * 0.9 }]}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <Text style={styles.title}>
+                {existingVaccination ? "Update Vaccination" : "Add Vaccination"}
               </Text>
-            </TouchableOpacity>
+
+              <TextInput
+                placeholder="Vaccine Name"
+                placeholderTextColor="#666"
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+              />
+
+              <Pressable onPress={handleOpenDatePicker}>
+                <View style={styles.input}>
+                  <Text style={{ color: "#0c1d1a" }}>
+                    {selectedDate.toISOString().split("T")[0]}
+                  </Text>
+                </View>
+              </Pressable>
+
+              {showDatePicker && (
+                <View style={styles.pickerWrapper}>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "spinner" : "spinner"}
+                    themeVariant="light"
+                    onChange={(_, date) => {
+                      if (date) setSelectedDate(date);
+                      setShowDatePicker(false);
+                    }}
+                    style={{ width: "100%" }}
+                  />
+                </View>
+              )}
+
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    !(name.trim() && selectedDate) && { opacity: 0.5 },
+                  ]}
+                  onPress={handleSave}
+                  disabled={!name.trim() || !selectedDate}
+                >
+                  <Text style={styles.buttonText}>
+                    {existingVaccination ? "Update" : "Save"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -134,13 +154,13 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
+    padding: 16,
   },
   modal: {
     backgroundColor: "#fff",
     padding: 20,
     borderRadius: 16,
-    width: "85%",
-    elevation: 5,
+    maxHeight: "90%",
   },
   title: {
     fontSize: 18,
@@ -154,6 +174,12 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: 16,
     color: "#0c1d1a",
+    marginBottom: 12,
+  },
+  pickerWrapper: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingVertical: 8,
     marginBottom: 12,
   },
   buttonRow: {

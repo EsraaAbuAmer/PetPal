@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { useRoute, useNavigation } from "@react-navigation/native";
@@ -21,6 +22,7 @@ import {
   useAddEventMutation,
   useDeleteEventMutation,
   useUpdateEventMutation,
+  useDeletePetMutation,
 } from "../features/pet/petApi";
 
 import Header from "../components/PetProfile/Header";
@@ -81,7 +83,9 @@ const PetProfileScreen = () => {
   const [editingVaccination, setEditingVaccination] = useState<any>(null);
   const [editingEvent, setEditingEvent] = useState<any>(null);
 
-  const [defaultVaccinationDate, setDefaultVaccinationDate] = useState(new Date());
+  const [defaultVaccinationDate, setDefaultVaccinationDate] = useState(
+    new Date()
+  );
   const [defaultEventDate, setDefaultEventDate] = useState(new Date());
 
   const handleOpenEditModal = () => {
@@ -96,6 +100,32 @@ const PetProfileScreen = () => {
     } catch (err) {
       Alert.alert("Error", "Could not delete event");
     }
+  };
+
+  const [deletePet] = useDeletePetMutation();
+
+  const handleDeletePet = async () => {
+    Alert.alert(
+      "Confirm Delete",
+      "Are you sure you want to delete this pet and all its data?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deletePet(petId).unwrap();
+              Alert.alert("Deleted", "Pet deleted successfully");
+              navigation.navigate("MainTabs"); // Go back to home or pet list
+            } catch (err) {
+              console.error("Failed to delete pet:", err);
+              Alert.alert("Error", "Failed to delete pet");
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleEditPet = async (updatedPet: any, newImageUri: string | null) => {
@@ -224,7 +254,7 @@ const PetProfileScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Header />
+        <Header onDeletePress={handleDeletePet} />
         <AvatarSection
           image={pet.image}
           name={capitalize(pet.name)}

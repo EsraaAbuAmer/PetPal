@@ -103,6 +103,13 @@ export const petApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Events"],
     }),
+    deletePet: builder.mutation({
+      query: (petId) => ({
+        url: `/pets/${petId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Pets", "Events"],
+    }),
   }),
 
   overrideExisting: true,
@@ -120,6 +127,7 @@ export const {
   useGetUpcomingEventsQuery,
   useUpdateVaccinationMutation,
   useDeleteVaccinationMutation,
-  useUpdateEventMutation,         // ✅ NEW
-  useDeleteEventMutation, 
+  useUpdateEventMutation, // ✅ NEW
+  useDeleteEventMutation,
+  useDeletePetMutation
 } = petApi;

@@ -7,6 +7,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Pressable,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -52,6 +57,7 @@ const AddOrEditEventModal: React.FC<AddOrEditEventModalProps> = ({
         setSelectedDate(defaultDate || new Date());
         setNotes('');
       }
+      setShowDatePicker(false);
     }
   }, [visible, defaultDate, existingEvent]);
 
@@ -73,73 +79,91 @@ const AddOrEditEventModal: React.FC<AddOrEditEventModalProps> = ({
     onClose();
   };
 
-  const onDateChange = (_event: any, selected?: Date) => {
-    setShowDatePicker(false);
-    if (selected) {
-      setSelectedDate(selected);
-    }
-  };
+  const screenWidth = Dimensions.get("window").width;
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.modal}>
-          <Text style={styles.title}>
-            {existingEvent ? 'Edit Event' : 'Add Event'}
-          </Text>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          <View style={[styles.modal, { width: screenWidth * 0.9 }]}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              <Text style={styles.title}>
+                {existingEvent ? 'Edit Event' : 'Add Event'}
+              </Text>
 
-          <TextInput
-            placeholder="Event Title"
-            style={[styles.input, errors.title && styles.inputError]}
-            value={eventTitle}
-            onChangeText={(text) => {
-              setEventTitle(text);
-              if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
-            }}
-          />
-          {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+              <TextInput
+                placeholder="Event Title"
+                placeholderTextColor="#666"
+                style={[styles.input, errors.title && styles.inputError]}
+                value={eventTitle}
+                onChangeText={(text) => {
+                  setEventTitle(text);
+                  if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
+                }}
+              />
+              {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
 
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            style={[styles.input, { justifyContent: 'center' }]}
-          >
-            <Text style={{ color: '#0c1d1a' }}>
-              {selectedDate instanceof Date
-                ? selectedDate.toISOString().split('T')[0]
-                : 'Select Event Date'}
-            </Text>
-          </TouchableOpacity>
+              <Pressable onPress={() => {
+                Keyboard.dismiss();
+                setShowDatePicker(true);
+              }}>
+                <View style={styles.input}>
+                  <Text style={{ color: '#0c1d1a' }}>
+                    {selectedDate.toISOString().split('T')[0]}
+                  </Text>
+                </View>
+              </Pressable>
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate instanceof Date ? selectedDate : new Date()}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={onDateChange}
-            />
-          )}
+              {showDatePicker && (
+                <View style={styles.pickerWrapper}>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="spinner"
+                    themeVariant="light"
+                    onChange={(_, date) => {
+                      if (date) setSelectedDate(date);
+                      setShowDatePicker(false);
+                    }}
+                    style={{ width: '100%' }}
+                  />
+                </View>
+              )}
 
-          <TextInput
-            placeholder="Notes"
-            style={[styles.input, errors.notes && styles.inputError]}
-            value={notes}
-            onChangeText={(text) => {
-              setNotes(text);
-              if (errors.notes) setErrors((prev) => ({ ...prev, notes: undefined }));
-            }}
-          />
-          {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
+              <TextInput
+                placeholder="Notes"
+                placeholderTextColor="#666"
+                style={[styles.input, errors.notes && styles.inputError]}
+                value={notes}
+                onChangeText={(text) => {
+                  setNotes(text);
+                  if (errors.notes) setErrors((prev) => ({ ...prev, notes: undefined }));
+                }}
+                multiline
+              />
+              {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
 
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Text style={styles.buttonText}>Save</Text>
-            </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    !(eventTitle.trim() && notes.trim()) && { opacity: 0.5 },
+                  ]}
+                  onPress={handleSave}
+                  disabled={!(eventTitle.trim() && notes.trim())}
+                >
+                  <Text style={styles.buttonText}>
+                    {existingEvent ? 'Update' : 'Save'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };
@@ -152,13 +176,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 16,
   },
   modal: {
     backgroundColor: '#fff',
     padding: 20,
     borderRadius: 16,
-    width: '85%',
-    elevation: 5,
+    maxHeight: '90%',
   },
   title: {
     fontSize: 18,
@@ -182,6 +206,12 @@ const styles = StyleSheet.create({
     color: 'red',
     fontSize: 12,
     marginBottom: 8,
+  },
+  pickerWrapper: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
   },
   buttonRow: {
     flexDirection: 'row',

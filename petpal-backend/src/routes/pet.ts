@@ -3,7 +3,9 @@ import { protect } from "../middleware/authMiddleware";
 import { db } from "../db";
 import { ResultSetHeader } from "mysql2";
 import { upload } from "../middleware/upload";
-import { Console } from "console";
+import fs from "fs";
+import path from "path";
+import { RowDataPacket } from "mysql2";
 
 const router = express.Router();
 
@@ -118,7 +120,7 @@ router.get("/:id", protect, async (req, res) => {
 // @desc    Update a pet
 // @route   PATCH /api/pets/:id
 // @access  Private
-router.patch('/:id', protect, upload.single('image'), async (req, res) => {
+router.patch("/:id", protect, upload.single("image"), async (req, res) => {
   const petId = req.params.id;
   const userId = req.user?.id;
 
@@ -141,39 +143,35 @@ router.patch('/:id', protect, upload.single('image'), async (req, res) => {
   try {
     // Start query
     let query = `UPDATE pets SET name = ?, breed = ?, weight = ?, type = ?, birth_date = ?, neutered = ?, gender = ?`;
-    const params = [
-      name,
-      breed,
-      weight,
-      type,
-      birth_date,
-      neutered,
-      gender,
-    ];
+    const params = [name, breed, weight, type, birth_date, neutered, gender];
 
     // Decide if we will update image:
     if (imageFile) {
-      const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageFile.filename}`;
+      const imageUrl = `${req.protocol}://${req.get("host")}/uploads/${
+        imageFile.filename
+      }`;
       query += `, image = ?`;
       params.push(imageUrl);
-    } 
-    else if (image_url) {
+    } else if (image_url) {
       // Optional: update to same image_url
       query += `, image = ?`;
       params.push(image_url);
-    } 
+    }
     // Else → do not touch image column
 
     // Finalize
     query += ` WHERE id = ? AND user_id = ?`;
     params.push(petId, userId);
 
-    const [result] = await db.execute(query, params) as [ResultSetHeader, unknown];
+    const [result] = (await db.execute(query, params)) as [
+      ResultSetHeader,
+      unknown
+    ];
 
-    res.json({ message: 'Pet updated successfully' });
+    res.json({ message: "Pet updated successfully" });
   } catch (error) {
-    console.error('Update pet error:', error);
-    res.status(500).json({ message: 'Failed to update pet' });
+    console.error("Update pet error:", error);
+    res.status(500).json({ message: "Failed to update pet" });
   }
 });
 router.post(
@@ -193,5 +191,51 @@ router.post(
     res.json({ imageUrl });
   }
 );
+
+router.delete("/:id", protect, async (req, res) => {
+  const petId = req.params.id;
+  const userId = req.user?.id;
+
+  try {
+    // Fetch the pet
+
+    const [rows] = await db.execute<RowDataPacket[]>(
+      `SELECT image FROM pets WHERE id = ? AND user_id = ?`,
+      [petId, userId]
+    );
+    if ((rows as any[]).length === 0) {
+      return res.status(404).json({ message: "Pet not found" });
+    }
+
+    const pet = rows[0] as { image: string };
+
+    // Delete the pet record (and cascading data if DB supports it)
+    await db.execute(`DELETE FROM pets WHERE id = ? AND user_id = ?`, [
+      petId,
+      userId,
+    ]);
+
+    // Delete the image if it's a local file
+    if (pet.image && pet.image.includes("/uploads/")) {
+      const filePath = path.join(
+        __dirname,
+        "..",
+        "..",
+        "uploads",
+        path.basename(pet.image)
+      );
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.warn("Failed to delete image file:", filePath, err.message);
+        }
+      });
+    }
+
+    res.json({ message: "Pet deleted successfully" });
+  } catch (error) {
+    console.error("Delete pet error:", error);
+    res.status(500).json({ message: "Failed to delete pet" });
+  }
+});
 
 export default router;
